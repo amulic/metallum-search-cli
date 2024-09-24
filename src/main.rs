@@ -57,34 +57,50 @@ fn boxed_search_by_album_title<'a>(query: &'a str) -> Pin<Box<dyn Future<Output 
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    loop{
     print_banner();
 
     println!("Choose a search option:");
-    println!("1. Search by band name");
-    println!("2. Search by genre");
-    println!("3. Search by album title");
+        println!("1. Search by band name");
+        println!("2. Search by genre");
+        println!("3. Search by album title");
+        println!("Type 'exit' to quit or 'help' for assistance.");
 
-    let mut choice = String::new();
-    io::stdout().flush().unwrap();
-    io::stdin().read_line(&mut choice).expect("Failed to read input");
-    let choice: usize = choice.trim().parse().expect("Please enter a valid number");
+        let mut choice = String::new();
+        io::stdout().flush().unwrap();
+        io::stdin().read_line(&mut choice).expect("Failed to read input");
+        let choice = choice.trim().to_string();
 
-    let (search_label, search_fn): (&str, SearchFn) = match choice {
-        1 => ("band name", boxed_search_by_band_name),
-        2 => ("genre", boxed_search_by_genre),
-        3 => ("album title", boxed_search_by_album_title),
-        _ => {
-            println!("Invalid choice.");
-            return Ok(());
+        if choice.eq_ignore_ascii_case("exit") {
+            println!("Exiting the program. Goodbye!");
+            break;
         }
-    };
 
-    // Get query input from the user
-   let mut query = String::new();
-    print!("Enter {}: ", search_label);
-    io::stdout().flush().unwrap();
-    io::stdin().read_line(&mut query).expect("Failed to read input");
-    query = query.trim().to_string();
+        if choice.eq_ignore_ascii_case("help") {
+            println!("Help: You can search for bands or albums by name, genre, or title. Select the option you want by typing its number.");
+            continue;
+        }
+
+        let (search_label, search_fn): (&str, SearchFn) = match choice.parse::<usize>() {
+            Ok(1) => ("band name", boxed_search_by_band_name),
+            Ok(2) => ("genre", boxed_search_by_genre),
+            Ok(3) => ("album title", boxed_search_by_album_title),
+            _ => {
+                println!("Invalid choice. Please try again.");
+                continue;
+            }
+        };
+
+        // Get query input from the user
+        let mut query = String::new();
+        print!("Enter {} (or type 'back' to return to the main menu): ", search_label);
+        io::stdout().flush().unwrap();
+        io::stdin().read_line(&mut query).expect("Failed to read input");
+        query = query.trim().to_string();
+
+        if query.eq_ignore_ascii_case("back") {
+            continue;
+        }
 
 
     match search_fn(&query).await {
@@ -174,7 +190,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     if let Some(songs) = &album_details.songs {
                                         println!("\nSongs:");
                                         for song in songs {
-                                            println!("\nNumber: {} Name: {} Lenght: {} Lyrics: {}", song.number, song.name, song.length, song.lyrics);
+                                            println!("\nNumber: {} \nName: {} \nLenght: {} \nLyrics: {}", song.number, song.name, song.length, song.lyrics);
                                         }
                                     }
                                 }
@@ -197,6 +213,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         }
         Err(e) => eprintln!("Error: {}", e),
+    }
+
+        println!("Type 'exit' to quit or 'back' to return to the main menu.");
+        let mut next_action = String::new();
+        io::stdout().flush().unwrap();
+        io::stdin().read_line(&mut next_action).expect("Failed to read input");
+
+        if next_action.trim().eq_ignore_ascii_case("exit") {
+            println!("Exiting the program. Goodbye!");
+            break;
+        }   
     }
 
     Ok(())
